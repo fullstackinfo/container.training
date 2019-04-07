@@ -160,7 +160,7 @@ Different deployments will use different underlying technologies.
 
 * A service mesh is a configurable network layer.
 
-* It can provide service discovery, high availablity, load balancing, observability...
+* It can provide service discovery, high availability, load balancing, observability...
 
 * Service meshes are particularly useful for microservices applications.
 
@@ -172,7 +172,7 @@ Different deployments will use different underlying technologies.
 
 ---
 
-## Ambassadors and service messhes
+## Ambassadors and service meshes
 
 * When using a service mesh, a "sidecar container" is often used as a proxy
 

@@ -64,7 +64,7 @@
 
   (`401 Unauthorized` HTTP code)
 
-- If a request is neither accepted nor accepted by anyone, it's anonymous
+- If a request is neither rejected nor accepted by anyone, it's anonymous
 
   - the user name is `system:anonymous`
 
@@ -108,7 +108,7 @@ class: extra-details
           --raw \
           -o json \
           | jq -r .users[0].user[\"client-certificate-data\"] \
-          | base64 -d \
+          | openssl base64 -d -A \
           | openssl x509 -text \
           | grep Subject:
   ```
@@ -127,7 +127,7 @@ class: extra-details
 - `--raw` includes certificate information (which shows as REDACTED otherwise)
 - `-o json` outputs the information in JSON format
 - `| jq ...` extracts the field with the user certificate (in base64)
-- `| base64 -d` decodes the base64 format (now we have a PEM file)
+- `| openssl base64 -d -A` decodes the base64 format (now we have a PEM file)
 - `| openssl x509 -text` parses the certificate and outputs it as plain text
 - `| grep Subject:` shows us the line that interests us
 
@@ -260,7 +260,7 @@ class: extra-details
 - Extract the token and decode it:
   ```bash
   TOKEN=$(kubectl get secret $SECRET -o json \
-          | jq -r .data.token | base64 -d)
+          | jq -r .data.token | openssl base64 -d -A)
   ```
 
 ]
@@ -540,7 +540,7 @@ It's important to note a couple of details in these flags ...
 
 - But that we can't create things:
   ```
-  ./kubectl create deployment --image=nginx
+  ./kubectl create deployment testrbac --image=nginx
   ```
 
 - Exit the container with `exit` or `^D`
@@ -610,4 +610,27 @@ class: extra-details
 - And the `cluster-admin` is, basically, `root`:
   ```bash
   kubectl describe clusterrole cluster-admin
+  ```
+
+---
+
+class: extra-details
+
+## Figuring out who can do what
+
+- For auditing purposes, sometimes we want to know who can perform an action
+
+- Here is a proof-of-concept tool by Aqua Security, doing exactly that:
+
+  https://github.com/aquasecurity/kubectl-who-can
+
+- This is one way to install it:
+  ```bash
+  docker run --rm -v /usr/local/bin:/go/bin golang \
+         go get -v github.com/aquasecurity/kubectl-who-can
+  ```
+
+- This is one way to use it:
+  ```bash
+  kubectl-who-can create pods
   ```

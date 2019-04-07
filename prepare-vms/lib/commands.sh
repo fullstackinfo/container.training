@@ -103,6 +103,37 @@ _cmd_deploy() {
     info "$0 cards $TAG"
 }
 
+_cmd kubebins "Install Kubernetes and CNI binaries but don't start anything"
+_cmd_kubebins() {
+    TAG=$1
+    need_tag
+
+    pssh --timeout 300 "
+    set -e
+    cd /usr/local/bin
+    if ! [ -x etcd ]; then
+        curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.10/etcd-v3.3.10-linux-amd64.tar.gz \
+        | sudo tar --strip-components=1 --wildcards -zx '*/etcd' '*/etcdctl'
+    fi
+    if ! [ -x hyperkube ]; then
+        curl -L https://dl.k8s.io/v1.14.0/kubernetes-server-linux-amd64.tar.gz \
+        | sudo tar --strip-components=3 -zx kubernetes/server/bin/hyperkube
+    fi
+    if ! [ -x kubelet ]; then
+        for BINARY in kubectl kube-apiserver kube-scheduler kube-controller-manager kubelet kube-proxy;
+        do
+            sudo ln -s hyperkube \$BINARY
+        done
+    fi
+    sudo mkdir -p /opt/cni/bin
+    cd /opt/cni/bin
+    if ! [ -x bridge ]; then
+        curl -L https://github.com/containernetworking/plugins/releases/download/v0.7.5/cni-plugins-amd64-v0.7.5.tgz \
+        | sudo tar -zx
+    fi
+    "
+}
+
 _cmd kube "Setup kubernetes clusters with kubeadm (must be run AFTER deploy)"
 _cmd_kube() {
     TAG=$1
@@ -123,7 +154,7 @@ _cmd_kube() {
     pssh --timeout 200 "
     if grep -q node1 /tmp/node && [ ! -f /etc/kubernetes/admin.conf ]; then
         kubeadm token generate > /tmp/token &&
-	sudo kubeadm init --token \$(cat /tmp/token)
+	sudo kubeadm init --token \$(cat /tmp/token) --apiserver-cert-extra-sans \$(cat /tmp/ipv4)
     fi"
 
     # Put kubeconfig in ubuntu's and docker's accounts
@@ -148,6 +179,12 @@ _cmd_kube() {
     if ! grep -q node1 /tmp/node && [ ! -f /etc/kubernetes/kubelet.conf ]; then
         TOKEN=\$(ssh -o StrictHostKeyChecking=no node1 cat /tmp/token) &&
         sudo kubeadm join --discovery-token-unsafe-skip-ca-verification --token \$TOKEN node1:6443
+    fi"
+
+    # Install metrics server
+    pssh "
+    if grep -q node1 /tmp/node; then
+	kubectl apply -f https://raw.githubusercontent.com/jpetazzo/container.training/master/k8s/metrics-server.yaml
     fi"
 
     # Install kubectx and kubens
@@ -275,6 +312,14 @@ _cmd opensg "Open the default security group to ALL ingress traffic"
 _cmd_opensg() {
     need_infra $1
     infra_opensg
+}
+
+_cmd disableaddrchecks "Disable source/destination IP address checks"
+_cmd_disableaddrchecks() {
+    TAG=$1
+    need_tag
+
+    infra_disableaddrchecks
 }
 
 _cmd pssh "Run an arbitrary command on all nodes"

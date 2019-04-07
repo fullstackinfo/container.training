@@ -32,7 +32,10 @@ chapters:
   - k8s/setup-k8s.md
   - k8s/kubectlrun.md
   - k8s/kubectlexpose.md
-- - k8s/ourapponkube.md
+- - k8s/shippingimages.md
+  - k8s/buildshiprun-selfhosted.md
+  - k8s/buildshiprun-dockerhub.md
+  - k8s/ourapponkube.md
   - k8s/kubectlproxy.md
   - k8s/localkubeconfig.md
   - k8s/accessinternal.md
@@ -55,8 +58,10 @@ chapters:
   - k8s/build-with-kaniko.md
   - k8s/configuration.md
 - - k8s/owners-and-dependents.md
+  - k8s/extending-api.md
   - k8s/statefulsets.md
   - k8s/portworx.md
+  - k8s/staticpods.md
 - - k8s/whatsnext.md
   - k8s/links.md
   - shared/thankyou.md
